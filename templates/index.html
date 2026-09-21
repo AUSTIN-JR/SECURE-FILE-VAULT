@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AES-256 Vault | Secure Cryptography Tool</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AES-256 File Vault</h1>
+      <p class="subtitle">Secure symmetric encryption & integrity verification</p>
+    </header>
+
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="encrypt-tab">Encrypt</button>
+      <button class="tab-btn" data-tab="decrypt-tab">Decrypt</button>
+      <button class="tab-btn" data-tab="learn-tab">Architecture</button>
+    </nav>
+
+    <!-- Encrypt Tab -->
+    <section id="encrypt-tab" class="tab-panel active">
+      <form id="encrypt-form">
+        <div class="drop-zone">
+          <input type="file" id="enc-file-input" required>
+          <div class="drop-text">Drag & drop a file here or <span>browse</span></div>
+          <div class="file-name-preview" id="enc-file-preview"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="enc-password">Encryption Password</label>
+          <input type="password" id="enc-password" required autocomplete="off">
+          <div class="strength-meter">
+            <div id="strength-bar" class="strength-bar"></div>
+          </div>
+          <div class="strength-meta">
+            <span id="strength-label">Entropy: 0 bits</span>
+            <span id="strength-advice">Min 12 characters recommended</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn" id="enc-submit-btn">Encrypt & Download</button>
+      </form>
+
+      <div class="progress-container" id="enc-progress-container">
+        <div class="progress-bar" id="enc-progress-bar"></div>
+      </div>
+      <div class="status-box" id="enc-status"></div>
+    </section>
+
+    <!-- Decrypt Tab -->
+    <section id="decrypt-tab" class="tab-panel">
+      <form id="decrypt-form">
+        <div class="drop-zone">
+          <input type="file" id="dec-file-input" accept=".enc" required>
+          <div class="drop-text">Drag & drop your <code>.enc</code> file here or <span>browse</span></div>
+          <div class="file-name-preview" id="dec-file-preview"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="dec-password">Decryption Password</label>
+          <input type="password" id="dec-password" required autocomplete="off">
+        </div>
+
+        <button type="submit" class="btn" id="dec-submit-btn">Decrypt & Download</button>
+      </form>
+
+      <div class="progress-container" id="dec-progress-container">
+        <div class="progress-bar" id="dec-progress-bar"></div>
+      </div>
+      <div class="status-box" id="dec-status"></div>
+    </section>
+
+    <!-- Learn Tab -->
+    <section id="learn-tab" class="tab-panel">
+      <div class="security-card">
+        <h3>Cryptographic Architecture</h3>
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th>Primitive</th>
+              <th>Specification</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Algorithm</td>
+              <td>AES-256-CBC</td>
+              <td>Bulk data confidentiality</td>
+            </tr>
+            <tr>
+              <td>Key Derivation</td>
+              <td>PBKDF2 (100,000 iterations, HMAC-SHA256)</td>
+              <td>Mitigates rainbow table & brute-force attacks</td>
+            </tr>
+            <tr>
+              <td>Salt</td>
+              <td>16 Bytes (CSPRNG via get_random_bytes)</td>
+              <td>Ensures unique keys even with identical passwords</td>
+            </tr>
+            <tr>
+              <td>IV</td>
+              <td>16 Bytes (CSPRNG via get_random_bytes)</td>
+              <td>Ensures identical blocks encrypt uniquely</td>
+            </tr>
+            <tr>
+              <td>Integrity</td>
+              <td>Pre-calculated SHA-256 Checksum</td>
+              <td>Detects unauthorized modification or tampering</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="/static/js/password-checker.js"></script>
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
