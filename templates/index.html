@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AES-256 Vault | Secure Cryptography Tool</title>
-  <link rel="stylesheet" href="/static/css/style.css">
+  <title>AES-256 Vault | Secure File Cryptography</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
   <div class="container">
@@ -22,15 +22,19 @@
     <!-- Encrypt Tab -->
     <section id="encrypt-tab" class="tab-panel active">
       <form id="encrypt-form">
-        <div class="drop-zone">
-          <input type="file" id="enc-file-input" required>
-          <div class="drop-text">Drag & drop a file here or <span>browse</span></div>
+        <div class="drop-zone" id="enc-drop-zone">
+          <input type="file" id="enc-file-input" multiple required>
+          <div class="drop-text">Drag & drop files here or <span>browse</span> (Multi-file enabled)</div>
           <div class="file-name-preview" id="enc-file-preview"></div>
         </div>
 
         <div class="form-group">
           <label for="enc-password">Encryption Password</label>
-          <input type="password" id="enc-password" required autocomplete="off">
+          <div class="input-action-group">
+            <input type="password" id="enc-password" required autocomplete="off">
+            <button type="button" class="action-btn toggle-visibility" data-target="enc-password" title="Toggle visibility">👁</button>
+            <button type="button" class="action-btn" id="generate-pass-btn" title="Generate strong password">⚡ Gen</button>
+          </div>
           <div class="strength-meter">
             <div id="strength-bar" class="strength-bar"></div>
           </div>
@@ -52,7 +56,7 @@
     <!-- Decrypt Tab -->
     <section id="decrypt-tab" class="tab-panel">
       <form id="decrypt-form">
-        <div class="drop-zone">
+        <div class="drop-zone" id="dec-drop-zone">
           <input type="file" id="dec-file-input" accept=".enc" required>
           <div class="drop-text">Drag & drop your <code>.enc</code> file here or <span>browse</span></div>
           <div class="file-name-preview" id="dec-file-preview"></div>
@@ -60,7 +64,10 @@
 
         <div class="form-group">
           <label for="dec-password">Decryption Password</label>
-          <input type="password" id="dec-password" required autocomplete="off">
+          <div class="input-action-group">
+            <input type="password" id="dec-password" required autocomplete="off">
+            <button type="button" class="action-btn toggle-visibility" data-target="dec-password" title="Toggle visibility">👁</button>
+          </div>
         </div>
 
         <button type="submit" class="btn" id="dec-submit-btn">Decrypt & Download</button>
@@ -88,26 +95,26 @@
             <tr>
               <td>Algorithm</td>
               <td>AES-256-CBC</td>
-              <td>Bulk data confidentiality</td>
+              <td>Confidentiality via symmetric block encryption</td>
+            </tr>
+            <tr>
+              <td>Batch Archive</td>
+              <td>Deflate (.zip)</td>
+              <td>Multi-file encrypted container streaming</td>
             </tr>
             <tr>
               <td>Key Derivation</td>
-              <td>PBKDF2 (100,000 iterations, HMAC-SHA256)</td>
+              <td>PBKDF2 (100,000 rounds, HMAC-SHA256)</td>
               <td>Mitigates rainbow table & brute-force attacks</td>
             </tr>
             <tr>
-              <td>Salt</td>
-              <td>16 Bytes (CSPRNG via get_random_bytes)</td>
-              <td>Ensures unique keys even with identical passwords</td>
-            </tr>
-            <tr>
-              <td>IV</td>
-              <td>16 Bytes (CSPRNG via get_random_bytes)</td>
-              <td>Ensures identical blocks encrypt uniquely</td>
+              <td>Salt / IV</td>
+              <td>16 Bytes CSPRNG</td>
+              <td>Guarantees distinct keys & blocks</td>
             </tr>
             <tr>
               <td>Integrity</td>
-              <td>Pre-calculated SHA-256 Checksum</td>
+              <td>SHA-256 Checksum</td>
               <td>Detects unauthorized modification or tampering</td>
             </tr>
           </tbody>
@@ -116,7 +123,7 @@
     </section>
   </div>
 
-  <script src="/static/js/password-checker.js"></script>
-  <script src="/static/js/main.js"></script>
+  <script src="{{ url_for('static', filename='js/password-checker.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

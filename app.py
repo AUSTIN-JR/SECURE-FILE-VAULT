@@ -1,5 +1,6 @@
 import io
 import time
+import zipfile
 import hashlib
 from flask import Flask, render_template, request, send_file, jsonify
 from werkzeug.utils import secure_filename
@@ -14,40 +15,47 @@ def index():
 
 @app.route('/api/encrypt', methods=['POST'])
 def api_encrypt():
-    if 'file' not in request.files or 'password' not in request.form:
-        return jsonify({'error': 'File and password are required.'}), 400
+    uploaded_files = request.files.getlist('files')
+    password = request.form.get('password')
 
-    file = request.files['file']
-    password = request.form['password']
+    if not uploaded_files or not password:
+        return jsonify({'error': 'Files and password are required.'}), 400
 
-    if not file.filename or not password:
-        return jsonify({'error': 'Filename or password cannot be empty.'}), 400
+    # Filter out empty file objects
+    files = [f for f in uploaded_files if f.filename]
+    if not files:
+        return jsonify({'error': 'No files selected.'}), 400
 
-    start_time = time.perf_counter()
-    raw_data = file.read()
-    orig_size = len(raw_data)
-    orig_hash = hashlib.sha256(raw_data).hexdigest()
+    # Single File Encryption
+    if len(files) == 1:
+        file = files[0]
+        raw_data = file.read()
+        encrypted_data = encrypt_bytes(raw_data, password)
+        download_name = secure_filename(file.filename) + ".enc"
 
-    encrypted_data = encrypt_bytes(raw_data, password)
-    duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        return send_file(
+            io.BytesIO(encrypted_data),
+            mimetype='application/octet-stream',
+            as_attachment=True,
+            download_name=download_name
+        )
 
-    download_name = secure_filename(file.filename) + ".enc"
+    # Batch Multi-File Encryption -> ZIP Archive
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for file in files:
+            safe_name = secure_filename(file.filename)
+            raw_data = file.read()
+            encrypted_data = encrypt_bytes(raw_data, password)
+            zip_file.writestr(f"{safe_name}.enc", encrypted_data)
 
-    response = send_file(
-        io.BytesIO(encrypted_data),
-        mimetype='application/octet-stream',
+    zip_buffer.seek(0)
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
         as_attachment=True,
-        download_name=download_name
+        download_name='encrypted_vault_batch.zip'
     )
-
-    response.headers['X-Original-Size'] = str(orig_size)
-    response.headers['X-Encrypted-Size'] = str(len(encrypted_data))
-    response.headers['X-Original-Hash'] = orig_hash
-    response.headers['X-Processing-Time-Ms'] = str(duration_ms)
-    response.headers['Access-Control-Expose-Headers'] = (
-        'X-Original-Size, X-Encrypted-Size, X-Original-Hash, X-Processing-Time-Ms'
-    )
-    return response
 
 @app.route('/api/decrypt', methods=['POST'])
 def api_decrypt():
@@ -61,14 +69,11 @@ def api_decrypt():
         return jsonify({'error': 'Filename or password cannot be empty.'}), 400
 
     encrypted_data = file.read()
-    start_time = time.perf_counter()
 
     try:
         plaintext, verified_hash = decrypt_bytes(encrypted_data, password)
     except ValueError as err:
         return jsonify({'error': str(err)}), 400
-
-    duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
     download_name = secure_filename(file.filename)
     if download_name.endswith('.enc'):
@@ -84,10 +89,7 @@ def api_decrypt():
     )
 
     response.headers['X-Decrypted-Hash'] = verified_hash
-    response.headers['X-Processing-Time-Ms'] = str(duration_ms)
-    response.headers['Access-Control-Expose-Headers'] = (
-        'X-Decrypted-Hash, X-Processing-Time-Ms'
-    )
+    response.headers['Access-Control-Expose-Headers'] = 'X-Decrypted-Hash'
     return response
 
 if __name__ == '__main__':

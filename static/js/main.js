@@ -1,4 +1,3 @@
-// Tab Switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -9,7 +8,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-// File Name Display
 function handleFileSelection(inputId, previewId) {
   const input = document.getElementById(inputId);
   const preview = document.getElementById(previewId);
@@ -17,22 +15,45 @@ function handleFileSelection(inputId, previewId) {
 
   input.addEventListener('change', () => {
     if (input.files && input.files.length > 0) {
-      const file = input.files[0];
-      preview.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      if (input.files.length === 1) {
+        const file = input.files[0];
+        preview.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      } else {
+        let totalSize = Array.from(input.files).reduce((acc, f) => acc + f.size, 0);
+        preview.textContent = `${input.files.length} files selected (${(totalSize / 1024).toFixed(1)} KB total - will bundle as .zip)`;
+      }
     }
   });
 }
 handleFileSelection('enc-file-input', 'enc-file-preview');
 handleFileSelection('dec-file-input', 'dec-file-preview');
 
-// Password Strength
+['enc-drop-zone', 'dec-drop-zone'].forEach(id => {
+  const zone = document.getElementById(id);
+  if (!zone) return;
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    zone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      zone.classList.add('active');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    zone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      zone.classList.remove('active');
+    });
+  });
+});
+
 const passInput = document.getElementById('enc-password');
 const bar = document.getElementById('strength-bar');
 const label = document.getElementById('strength-label');
 const advice = document.getElementById('strength-advice');
 
-if (passInput && typeof assessPassword === 'function') {
-  passInput.addEventListener('input', () => {
+function updateStrengthUI() {
+  if (passInput && typeof assessPassword === 'function') {
     const res = assessPassword(passInput.value);
     if (bar) {
       bar.style.width = res.percent + '%';
@@ -40,10 +61,42 @@ if (passInput && typeof assessPassword === 'function') {
     }
     if (label) label.textContent = `Entropy: ~${res.entropy} bits`;
     if (advice) advice.textContent = res.advice;
+  }
+}
+if (passInput) passInput.addEventListener('input', updateStrengthUI);
+
+document.querySelectorAll('.toggle-visibility').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const targetInput = document.getElementById(btn.dataset.target);
+    if (!targetInput) return;
+    if (targetInput.type === 'password') {
+      targetInput.type = 'text';
+      btn.textContent = '🔒';
+    } else {
+      targetInput.type = 'password';
+      btn.textContent = '👁';
+    }
+  });
+});
+
+const genBtn = document.getElementById('generate-pass-btn');
+if (genBtn) {
+  genBtn.addEventListener('click', () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=';
+    const array = new Uint8Array(16);
+    window.crypto.getRandomValues(array);
+    let generatedPassword = '';
+    for (let i = 0; i < array.length; i++) {
+      generatedPassword += chars[array[i] % chars.length];
+    }
+    passInput.value = generatedPassword;
+    passInput.type = 'text';
+    const toggleBtn = document.querySelector('.toggle-visibility[data-target="enc-password"]');
+    if (toggleBtn) toggleBtn.textContent = '🔒';
+    updateStrengthUI();
   });
 }
 
-// Request Handler with Proper Error Display
 function processRequest(url, formData, progressContainer, progressBar, statusBox) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -86,7 +139,6 @@ function processRequest(url, formData, progressContainer, progressBar, statusBox
         statusBox.style.display = 'block';
         resolve();
       } else {
-        // Read error JSON from blob response
         const blob = xhr.response;
         blob.text().then(text => {
           let errorMessage = "Invalid password or corrupted ciphertext.";
@@ -115,7 +167,6 @@ function processRequest(url, formData, progressContainer, progressBar, statusBox
   });
 }
 
-// Encrypt Submit
 const encForm = document.getElementById('encrypt-form');
 if (encForm) {
   encForm.addEventListener('submit', (e) => {
@@ -123,11 +174,13 @@ if (encForm) {
     const fileInput = document.getElementById('enc-file-input');
     const pInput = document.getElementById('enc-password');
 
-    if (!fileInput.files.length) return alert('Select a file first.');
+    if (!fileInput.files.length) return alert('Select at least one file first.');
     if (!pInput.value) return alert('Enter a password.');
 
     const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
+    for (let i = 0; i < fileInput.files.length; i++) {
+      formData.append('files', fileInput.files[i]);
+    }
     formData.append('password', pInput.value);
 
     processRequest(
@@ -140,7 +193,6 @@ if (encForm) {
   });
 }
 
-// Decrypt Submit
 const decForm = document.getElementById('decrypt-form');
 if (decForm) {
   decForm.addEventListener('submit', (e) => {
